@@ -14,14 +14,14 @@ Data downloaded from http://www.istat.it/storage/cartografia/variabili-censuarie
 
     
 Headers correspond to:
-#P1: number of residents
-#P61: number of employed people
-#E17: number of residential buildings with one floor
-#E18: number of residential buildings with 2 floors
-#E19: number of residential buildings with 3 floors
-#E20: number of residential buildings with 4 floors or more
-#SEZ2001: identifier for "sezione di censimento"
-#COMUNE
-#AreaMQ: area of a NIL in square meters
+* P1: number of residents
+* P61: number of employed people
+* E17: number of residential buildings with one floor
+* E18: number of residential buildings with 2 floors
+* E19: number of residential buildings with 3 floors
+* E20: number of residential buildings with 4 floors or more
+* SEZ2001: identifier for "sezione di censimento"
+* COMUNE
+* AreaMQ: area of a NIL in square meters
 
 
