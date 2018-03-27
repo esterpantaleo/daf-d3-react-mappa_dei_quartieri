@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>get Table of intersection between NILs and Sezioni Di Censimento</title>
+    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/d3-queue.v3.min.js"></script>
+  </head>
+  <body>
+
+    <script>
+      var geojsonNILfile = "./data/NILZone.EPSG4326.geojson";
+      var geojsonSezioniDiCensimentofile = "./data/ds98_infogeo_sezioni_censimento_localizzazione_2011c.EPSG4326.geojson";
+      var txt = "";
+      d3.queue(2).defer(d3.json, geojsonNILfile)
+          .defer(d3.json, geojsonSezioniDiCensimentofile)
+          .await((error, geojsonNIL, geojsonSezioniDiCensimento) => {
+              /*geojsonNIL.features.map((n) => {
+                  console.log("NIL " + n.properties.NIL);
+      
+                  var tmp = [];
+                  //var intersects = []
+                  geojsonSezioniDiCensimento.features.map((s) => {
+                      var center = turf.centerOfMass(s);
+                      if (turf.inside(center, n)) {
+                          tmp.push(s.properties.SEZ);
+                      }
+                  });
+                  txt = txt + tmp.map((t) => { return t + ";" + n.properties.NIL + "<br/>";}).join("");
+              });
+              d3.select("body").append("p").html(txt);*/
+
+              txt =geojsonNIL.features.map((n) => {
+      console.log(n)
+                  return n.properties.NIL + ";" + n.properties.AreaMQ + "<br/>";
+              }).join("");
+              d3.select("body").append("p").html(txt);
+          });
+    </script>
+  </body>
+  </html>
