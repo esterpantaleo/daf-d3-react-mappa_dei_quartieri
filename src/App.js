@@ -3,33 +3,45 @@ import './App.css';
 import Map from './Map';
 import BarChart from './BarChart';
 import geojson from './NILZone.EPSG4326.js';
+import data from './results.js';
 import { range } from 'd3-array';
-import { scaleThreshold } from 'd3-scale';
+import { scaleLinear } from 'd3-scale';
+
+var colorIntervals = ["#FFFFDD","#AAF191","#80D385","#61B385","#3E9583","#217681","#285285","#1F2D86","#000086"];
+var C = colorIntervals.length;
+var dataMin = 2.5, dataMax = 3.8;
+var dataIntervals = [...Array(C).keys()];
+dataIntervals = dataIntervals.map((d) => d * (dataMax-dataMin) / C  + dataMin);
 
 var options = {
     city: "Milano",
     center: [9.191383, 45.464211],
-    zoom: 11,
-    dataIntervals: [22,44,66,88],
-    colorIntervals: ["#75739F", "#5EAFC6", "#41A368", "#93C464"],
-    highlightColor: '#FCBC34',
-    property: 'launchday'
+    zoom: 10.7,
+    dataIntervals: dataIntervals, 
+    colorIntervals: ["#FFFFDD","#AAF191","#80D385","#61B385","#3E9583","#217681","#285285","#1F2D86","#000086"],
+    highlightColor: 'black',
+    id: 'NIL',
+    property: 'tipiAlloggio'
 };
 
 //define color scale
 //color scale for mapbox
-var stops = options.dataIntervals.map((d, i) => i>0 ? [options.dataIntervals[i-1], options.colorIntervals[i]] : [0, options.colorIntervals[i]]);
+var stops = options.dataIntervals.map((d, i) => [options.dataIntervals[i],options.colorIntervals[i]]);
+
 //color scale for d3
-const colorScale = scaleThreshold().domain(options.dataIntervals).range(options.colorIntervals);
+const colorScale = scaleLinear().domain(options.dataIntervals).range(options.colorIntervals);
 
 //extract features from geojson
-const data = geojson.features;
-//attach random data to data
-data.forEach((d,i) => {
-    const offset = Math.random()
-    d.properties[options.property] = i
-    d.data = range(87).map((p,q) => q < i ? 0 : Math.random() * 2 + offset)
+var features = geojson.features;
+
+var quartieri = data.map((d) => d[options.id]);
+
+features.forEach((d) => {
+    var index = quartieri.indexOf(d.properties[options.id]); 
+    d.properties[options.property] = data[index][options.property];
 });
+
+features = features.sort((a,b) => b.properties[options.property]-a.properties[options.property]);
 
 class App extends Component {
     constructor(props){
@@ -39,7 +51,7 @@ class App extends Component {
     };
         
     onHover(d) {
-	this.setState({ hover: d.properties[options.property] })
+	this.setState({ hover: d.properties[options.id] })
     };
         
     render() {
@@ -54,8 +66,9 @@ class App extends Component {
 	                    onHover={this.onHover}
 	                    stops={stops}
 	                    highlightColor={options.highlightColor}
-	                    data={{type: "FeatureCollection", features: data}}
+	                    data={{type: "FeatureCollection", features: features}}
 	                    property={options.property}
+	                    id={options.id}
 	                    quartieri={{center: options.center, zoom: options.zoom}}
 		        />
 	                <div style={{ width: "25vw" }}>
@@ -64,8 +77,9 @@ class App extends Component {
 	                        onHover={this.onHover}
 	                        colorScale={colorScale}
 	                        highlightColor={options.highlightColor}
-	                        data={data}
-	                        property={options.property}
+	                        data={features}
+   	                        property={options.property}
+	                        id={options.id}
 		            />   
 	                </div>        	    
 		    </div>
