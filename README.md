@@ -4,14 +4,17 @@ A [d3.js](https://d3js.org) dashboard using React built with [Create React App](
 `npm i` and `npm start` and you should see a dashboard at `localhost:3000`
 
 # Input data
-## Istat data aggregated on "sezioni di censimento" (file ./src/data/istat_2011_Milano.csv)
-Data downloaded from http://www.istat.it/storage/cartografia/variabili-censuarie/dati-cpa_2011.zip, subfolder "Sezioni di censimento" (documentation available at documented at https://www.istat.it/it/files/2013/11/Descrizione-dati-Pubblicazione-2016.03.09.pdf) extracted with code:
+## Istat data [aggregated on "sezioni di censimento"](src/data/istat_2011_Milano.csv)
+Data downloaded from ISTAT at this [link](http://www.istat.it/storage/cartografia/variabili-censuarie/dati-cpa_2011.zip), subfolder "Sezioni di censimento" (documentation available at documented [here](https://www.istat.it/it/files/2013/11/Descrizione-dati-Pubblicazione-2016.03.09.pdf) extracted with code:
 
     comune="Milano"
+
     cd dati-cpa_2011/Sezioni\ di\ Censimento/
     output=../istat_2011_${comune}.csv
+
     #Print header
     head -1 R01_indicatori_2011_sezioni.csv | awk 'BEGIN{FS=";"} BEGIN{OFS=";"}{print $6,$8,$13,$73,$138,$139,$140,$141}' >> ${output}
+
     #Print data
     for i in *; do echo "processing file "$i; cat ${i} | tail -n +2 | awk 'BEGIN{FS=";"} BEGIN{OFS=";"}{print $6,$8,$13,$73,$138,$139,$140,$141}' | grep ${comune} >> ${output}; done
 
