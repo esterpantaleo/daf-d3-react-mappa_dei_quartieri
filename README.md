@@ -26,19 +26,19 @@ Headers correspond to:
 * COMUNE
 * AreaMQ: area of a NIL in square meters
 
-## Geojson file of "sezioni di censimento" and of "quartieri" (files ./src/data/ds98_infogeo_sezioni_censimento_localizzazione_2011c.EPSG4326.geojson
- and NILZone.EPSG4326.geojson)
+## Geojson file of ["sezioni di censimento"](src/data/ds98_infogeo_sezioni_censimento_localizzazione_2011c.EPSG4326.geojson) and of ["quartieri"](NILZone.EPSG4326.geojson)
 
-## Mapping between "sezioni di censimento" and "quartieri" (file ./src/data/tableNILSezioniDiCensimento2011_sorted_prefixed.csv)
+## [Mapping between "sezioni di censimento" and "quartieri"](src/data/tableNILSezioniDiCensimento2011_sorted_prefixed.csv)
 The visualization is based on bigger units than "sezioni di censimento", i.e. on "quartieri", or neighborhoods.
-The mappping between "sezioni di censimento" and "quartieri" has been done with the script in ./src/data/getTableNILSezioniDiCensimento2011.html (using the js library turf, i.e., through the intersection of centroids of "sezioni di censimemto" and "quartieri polygons") and with the bash command:
+The mappping between "sezioni di censimento" and "quartieri" has been done with a [script](src/data/getTableNILSezioniDiCensimento2011.html) (using the js library turf, i.e., through the intersection of centroids of "sezioni di censimemto" and "quartieri polygons") and with the bash command:
 
     join -a 1 -a 2 -e'-' -1 2 -2 1 -o '0,1.1,1.3,1.4,1.5,1.6,1.7,1.8,2.2' -t ";" istat_2011_Milano.csv tableNILSezioniDiCensimento2011_sorted_prefixed.csv
 
-## Indicators (file ./src/results.js)
+## [Indicators](src/results.js)
 Two indicators have been computed:
 * tipi di alloggio (tipiAlloggio)
 * densità di occupati (densitaOccupati)
+
 From the Istat data and from the area of "quartieri" in R:
 
     data.csv <- read.csv(file="data.csv", sep=";", header=TRUE)
@@ -48,18 +48,18 @@ From the Istat data and from the area of "quartieri" in R:
     results = c();
     for (n in NIL) {
         nildata.csv = data.csv[which(data.csv[,9]==n), c(3,4,5,6,7,8)]
-	
-	numOccupati = as.numeric(nildata.csv[,2])
-	densitaOccupati = sum(numOccupati)/tableNILAreaMQ.csv[which(tableNILAreaMQ.csv[,1]==n),2]
+        	
+        numOccupati = as.numeric(nildata.csv[,2])
+        densitaOccupati = sum(numOccupati)/tableNILAreaMQ.csv[which(tableNILAreaMQ.csv[,1]==n),2]
 
         #sum(E17*1+E18*2+E19*3+E20*4)/sum(E17+E18+E19+E20)
-	numAlloggi1Piano = as.numeric(nildata.csv[,3]
-	numAlloggi2Piani = as.numeric(nildata.csv[,4])
-	numAlloggi3Piani = as.numeric(nildata.csv[,5])
-	numAlloggi4PianiOPiu = as.numeric(nildata.csv[,6])
-	numTotAlloggi = sum(numAlloggi1Piano + numAlloggi2Piani + numAlloggi3Piani + numAlloggi4PianiOPiu)
-	tipiAlloggio = sum(numAlloggi1Piano + numAlloggi2Piani * 2 + numAlloggi3Piani * 3 + numAlloggi4PianiOPiu * 4) / sum(numTotAlloggi)
-
+        numAlloggi1Piano = as.numeric(nildata.csv[,3]
+        numAlloggi2Piani = as.numeric(nildata.csv[,4])
+        numAlloggi3Piani = as.numeric(nildata.csv[,5])
+        numAlloggi4PianiOPiu = as.numeric(nildata.csv[,6])
+        numTotAlloggi = sum(numAlloggi1Piano + numAlloggi2Piani + numAlloggi3Piani + numAlloggi4PianiOPiu)
+        tipiAlloggio = sum(numAlloggi1Piano + numAlloggi2Piani * 2 + numAlloggi3Piani * 3 + numAlloggi4PianiOPiu * 4) / sum(numTotAlloggi)
+        
         results = rbind(results, c(n, densitaOccupati, tipiAlloggio))
     }
     #Write results file
