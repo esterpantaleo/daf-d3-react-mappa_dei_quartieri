@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8">
     <title>get Table of intersection between NILs and Sezioni Di Censimento</title>
-    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+    <script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="https://d3js.org/d3-queue.v3.min.js"></script>
   </head>
   <body>
 
     <script>
-      var geojsonNILfile = "./data/NILZone.EPSG4326.geojson";
-      var geojsonSezioniDiCensimentofile = "./data/ds98_infogeo_sezioni_censimento_localizzazione_2011c.EPSG4326.geojson";
+      var geojsonNILfile = "./NILZone.EPSG4326.geojson";
+      var geojsonSezioniDiCensimentofile = "./ds98_infogeo_sezioni_censimento_localizzazione_2011c.EPSG4326.geojson";
       var txt = "";
       d3.queue(2).defer(d3.json, geojsonNILfile)
           .defer(d3.json, geojsonSezioniDiCensimentofile)
@@ -31,7 +31,7 @@
               });
               d3.select("body").append("p").html(txt);*/
 
-              txt =geojsonNIL.features.map((n) => {
+              txt = geojsonNIL.features.map((n) => {
       console.log(n)
                   return n.properties.NIL + ";" + n.properties.AreaMQ + "<br/>";
               }).join("");
