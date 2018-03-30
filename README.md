@@ -1,4 +1,4 @@
-A [d3.js](https://d3js.org) dashboard using React built with [Create React App](https://github.com/facebookincubator/create-react-app) visualizing statistical data from ISTAT (year 2011) (not yet actually, right now it uses random data) on the map of neighborhoods (NIL) in Milan, Italy.
+A [d3.js](https://d3js.org) dashboard using React built with [Create React App](https://github.com/facebookincubator/create-react-app) visualizing statistical data from ISTAT (year 2011) on the map of neighborhoods (NIL) in Milan, Italy.
 
 # Use
 `npm i` and `npm start` and you should see a dashboard at `localhost:3000`
