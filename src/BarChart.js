@@ -24,7 +24,7 @@ class BarChart extends Component {
 	this.barWidth = 7;
 	const legend = legendColor()
 	      .scale(this.props.colorScale)
-              .labelFormat(format('.2f'));
+              .labelFormat(format('.5f'));
 	
 	select(node)
 	    .selectAll("g.legend")
