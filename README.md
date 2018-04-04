@@ -4,8 +4,12 @@ A [d3.js](https://d3js.org) dashboard using React built with [Create React App](
 `npm i` and `npm start` and you should see a dashboard at `localhost:3000`
 
 # Input data
-## Istat data [aggregated on "sezioni di censimento"](src/data/istat_2011_Milano.csv)
-Data downloaded from ISTAT at this [link](http://www.istat.it/storage/cartografia/variabili-censuarie/dati-cpa_2011.zip), subfolder "Sezioni di censimento" (documentation available at documented [here](https://www.istat.it/it/files/2013/11/Descrizione-dati-Pubblicazione-2016.03.09.pdf) extracted with code:
+The visualization requires a geojson file of polygons and a csv file (turned into js: results.js) with a number of rows equal to the number of polygons and containing data to be associated to each polygon. If "NIL", or "SEZCENS", is the unique identifier of a polygon (a feature in the geojson file), results.js must have a column with header "NIL", or "SEZCENS", containing the identifiers of each polygon. Each other column in the results.js file is a different dataset to be associated to each polygon.
+
+## Csv file
+To get the results.js file we need Istat data [aggregated on "sezioni di censimento"](src/data/istat_2011_Milano.csv), a mapping between "sezioni di censimento" and our polygons, and we need to apply some formulas  
+### Extracting Istat data
+Istat data has been downloaded from ISTAT at this [link](http://www.istat.it/storage/cartografia/variabili-censuarie/dati-cpa_2011.zip), subfolder "Sezioni di censimento" (documentation available [here](https://www.istat.it/it/files/2013/11/Descrizione-dati-Pubblicazione-2016.03.09.pdf). Data for a specific "comune" has been extracted as follows:
 
     comune="Milano"
 
@@ -29,11 +33,9 @@ Headers correspond to:
 * COMUNE
 * AreaMQ: area of a NIL in square meters
 
-## Geojson file of ["sezioni di censimento"](src/data/ds98_infogeo_sezioni_censimento_localizzazione_2011c.EPSG4326.geojson) and of ["quartieri"](NILZone.EPSG4326.geojson)
-
-## [Mapping between "sezioni di censimento" and "quartieri"](src/data/tableNILSezioniDiCensimento2011_sorted_prefixed.csv)
-The visualization is based on bigger units than "sezioni di censimento", i.e. on "quartieri", or neighborhoods.
-The mappping between "sezioni di censimento" and "quartieri" has been done with a [script](src/data/getTableNILSezioniDiCensimento2011.html) (using the js library turf, i.e., through the intersection of centroids of "sezioni di censimemto" and "quartieri polygons") and with the bash command:
+### [Mapping "sezioni di censimento" and polygons](src/data/tableNILSezioniDiCensimento2011_sorted_prefixed.csv)
+Istat data is aggregated over sezioni di censimento. We need to aggregate our data over our polygons. 
+For this we need a mapping between "sezioni di censimento" and the polygons. The script to obtain the mapping can be found [here](src/data/getTableNILSezioniDiCensimento2011.html) (it uses the js library turf, i.e., the intersection of centroids of "sezioni di censimemto" and polygons). Given the mapping tableNILSezioniDiCensimento2011_sorted_prefixed.csv we use bash to join:
 
     join -a 1 -a 2 -e'-' -1 2 -2 1 -o '0,1.1,1.3,1.4,1.5,1.6,1.7,1.8,2.2' -t ";" istat_2011_Milano.csv tableNILSezioniDiCensimento2011_sorted_prefixed.csv
 
@@ -42,7 +44,7 @@ Two indicators have been computed:
 * tipi di alloggio (tipiAlloggio)
 * densità di occupati (densitaOccupati)
 
-From the Istat data and from the area of "quartieri" in R:
+From the Istat data and from the area of the polygons, in R:
 
     data.csv <- read.csv(file="data.csv", sep=";", header=TRUE)
     tableNILAreaMQ.csv <- read.csv(file="tableNILAreaMQ.csv"), sep=";", header=TRUE)

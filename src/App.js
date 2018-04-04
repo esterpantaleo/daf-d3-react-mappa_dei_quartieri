@@ -3,45 +3,44 @@ import './App.css';
 import Map from './Map';
 import BarChart from './BarChart';
 import geojson from './NILZone.EPSG4326.js';
-import data from './results.js';
+import results from './results.js'; 
 import { range } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
-
-var colorIntervals = ["#FFFFDD","#AAF191","#80D385","#61B385","#3E9583","#217681","#285285","#1F2D86","#000086"];
-var C = colorIntervals.length;
-var dataMin = 2.5, dataMax = 3.8;
-var dataIntervals = [...Array(C).keys()];
-dataIntervals = dataIntervals.map((d) => d * (dataMax-dataMin) / C  + dataMin);
 
 var options = {
     city: "Milano",
     center: [9.191383, 45.464211],
-    zoom: 10.7,
-    dataIntervals: dataIntervals, 
-    colorIntervals: ["#FFFFDD","#AAF191","#80D385","#61B385","#3E9583","#217681","#285285","#1F2D86","#000086"],
+    zoom: 10.7, 
+    colorIntervals: ['#FFFFDD','#AAF191','#80D385','#61B385','#3E9583','#217681','#285285','#1F2D86','#000086'],
     highlightColor: 'black',
-    id: 'NIL',
-    property: 'tipiAlloggio'
+    unit: 'NIL', //change this based on features in NILZone.EPSG4326.js and on header in results.js
+    property: 'densitaOccupati', //change this based on which property you would like to display (from header in results.js)
+    propertyLabel: 'Densità di occupati'
 };
 
-//define color scale
-//color scale for mapbox
-var stops = options.dataIntervals.map((d, i) => [options.dataIntervals[i],options.colorIntervals[i]]);
-
-//color scale for d3
-const colorScale = scaleLinear().domain(options.dataIntervals).range(options.colorIntervals);
-
 //extract features from geojson
+//attach additional properties to these features from results.js (i.e. variable "results")
 var features = geojson.features;
-
-var quartieri = data.map((d) => d[options.id]);
-
+var quartieri = results.map((d) => d[options.unit]);
 features.forEach((d) => {
-    var index = quartieri.indexOf(d.properties[options.id]); 
-    d.properties[options.property] = data[index][options.property];
+    var index = quartieri.indexOf(d.properties[options.unit]); 
+    d.properties[options.property] = results[index][options.property];
 });
+//sort features based on value of "options.property"
+features = features.sort((a, b) => b.properties[options.property] - a.properties[options.property]);
 
-features = features.sort((a,b) => b.properties[options.property]-a.properties[options.property]);
+//define color scale
+var arrayProperty = results.map((d) => d[options.property]);
+var minProperty = Math.min(...arrayProperty),
+    maxProperty = Math.max(...arrayProperty);
+var C = options.colorIntervals.length;
+var intervalsProperty = [...Array(C).keys()]
+    .map((d) => d * (maxProperty - minProperty) / C  + minProperty);
+
+//color scale for mapbox             
+var stops = intervalsProperty.map((d, i) => [intervalsProperty[i], options.colorIntervals[i]]);
+//color scale for d3                 
+const colorScale = scaleLinear().domain(intervalsProperty).range(options.colorIntervals);
 
 class App extends Component {
     constructor(props){
@@ -51,7 +50,7 @@ class App extends Component {
     };
         
     onHover(d) {
-	this.setState({ hover: d.properties[options.id] })
+	this.setState({ hover: d.properties[options.unit] })
     };
         
     render() {
@@ -68,7 +67,7 @@ class App extends Component {
 	                    highlightColor={options.highlightColor}
 	                    data={{type: "FeatureCollection", features: features}}
 	                    property={options.property}
-	                    id={options.id}
+	                    unit={options.unit}
 	                    quartieri={{center: options.center, zoom: options.zoom}}
 		        />
 	                <div style={{ width: "25vw" }}>
@@ -79,7 +78,8 @@ class App extends Component {
 	                        highlightColor={options.highlightColor}
 	                        data={features}
    	                        property={options.property}
-	                        id={options.id}
+	                        propertyLabel={options.propertyLabel}
+	                        unit={options.unit}
 		            />   
 	                </div>        	    
 		    </div>

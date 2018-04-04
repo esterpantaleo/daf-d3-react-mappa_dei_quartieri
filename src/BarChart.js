@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
+import { format } from 'd3-format';
 import { max} from 'd3-array';
 import { legendColor } from 'd3-svg-legend';
 import { select } from 'd3-selection';
@@ -23,7 +24,8 @@ class BarChart extends Component {
 	this.barWidth = 7;
 	const legend = legendColor()
 	      .scale(this.props.colorScale)
-
+              .labelFormat(format('.2f'));
+	
 	select(node)
 	    .selectAll("g.legend")
 	    .data([0])
@@ -46,7 +48,7 @@ class BarChart extends Component {
 	    .attr("text-anchor", "left")
 	    .attr("x", 80)
 	    .attr("y", 20)
-	    .text("Tipi di alloggio");
+	    .text(this.props.propertyLabel);
 
 	select(node)
 	    .append("text")
@@ -54,19 +56,19 @@ class BarChart extends Component {
 	    .attr("text-anchor", "middle")
 	    .attr("x", 230 - this.yScale(this.props.data[0].properties[this.props.property]))
 	    .attr("y", 110)
-	    .text(Math.round(100 *this.props.data[0].properties[this.props.property]) / 100);
+	    .text(Math.round(1000 * this.props.data[0].properties[this.props.property]) / 1000);
 
 	select(node)
 	    .append("text")
-	    .attr("id", this.props.id)
+	    .attr("id", this.props.unit)
 	    .attr("x", 20)
 	    .attr("y", 50)
 
 	select(node)
 	    .append("text")
-	    .attr("id", "tipiAlloggio")
+	    .attr("id", "property")
 	    .attr("x", 20)
-	    .attr("y", 60 + this.barWidth *2)
+	    .attr("y", 60 + this.barWidth * 2)
 
 	this.createBarChart();
     };
@@ -100,17 +102,17 @@ class BarChart extends Component {
             .attr("width", d => this.yScale(d.properties[this.props.property]))
             .attr("height", this.barWidth)
             .style("fill", d => {
-		return this.props.hoverElement === d.properties[this.props.id] ? this.props.highlightColor : this.props.colorScale(d.properties[this.props.property]);
+		return this.props.hoverElement === d.properties[this.props.unit] ? this.props.highlightColor : this.props.colorScale(d.properties[this.props.property]);
 	    })
             .style("stroke", "black")
             .style("stroke-opacity", 0.25);
 	
-	var index = this.props.data.map(d => d.properties[this.props.id]).indexOf(this.props.hoverElement);
+	var index = this.props.data.map(d => d.properties[this.props.unit]).indexOf(this.props.hoverElement);
 	if (index > -1) {
-	    select('#' + this.props.id)
-		.text(this.props.id + ": "  + this.props.data[index].properties[this.props.id]);
-	    select("#tipiAlloggio")
-		.text("tipi di alloggio: " + Math.round(100*this.props.data[index].properties[this.props.property])/100);
+	    select('#' + this.props.unit)
+		.text(this.props.unit + ": "  + this.props.data[index].properties[this.props.unit]);
+	    select("#property")
+		.text(this.props.propertyLabel + ": " + Math.round(1000 * this.props.data[index].properties[this.props.property]) / 1000);
 	}		      
     };
     
