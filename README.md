@@ -70,7 +70,6 @@ From the Istat data and from the area of the polygons, in R:
         
         results = rbind(results, c(n, densitaOccupati, tipiAlloggio))
     }
-    
     #Write results file
     write.table(results, "results.csv", row.names=FALSE, sep=";", quote=FALSE)
     
