@@ -7,14 +7,15 @@ import results from './results.js';
 import { range } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 
+//change options fields with a star  
 var options = {
-    city: "Milano",
-    center: [9.191383, 45.464211],
-    zoom: 10.7, 
+    city: "Milano",  //*
+    center: [9.191383, 45.464211], //*
+    zoom: 10.7, //*
     colorIntervals: ['#FFFFDD','#AAF191','#80D385','#61B385','#3E9583','#217681','#285285','#1F2D86','#000086'],
     highlightColor: 'black',
-    unit: 'NIL', //change this based on features in NILZone.EPSG4326.js and on header in results.js
-    property: 'densitaOccupati', //change this based on which property you would like to display (from header in results.js)
+    unit: 'NIL', //* change this based on the feature in the geojson file identifying the polygon (this should match a header in results.js)
+    property: 'densitaOccupati', //* change this based on which property you would like to display (from header in results.js)
     propertyLabel: 'Densità di occupati'
 };
 
