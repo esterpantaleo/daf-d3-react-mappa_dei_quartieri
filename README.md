@@ -1,4 +1,4 @@
-A [d3.js](https://d3js.org) dashboard using React built with [Create React App](https://github.com/facebookincubator/create-react-app) visualizing statistical data from ISTAT (year 2011) on the map of neighborhoods (NIL) in Milan, Italy.
+A [d3.js](https://d3js.org) dashboard using React built with [Create React App](https://github.com/facebookincubator/create-react-app) visualizing statistical data from ISTAT (year 2011) on the map of neighborhoods (NIL) in Milan, Italy. The application can be easily used to visualize data from different cities (Milan, Rome, Turin).
 
 # Use
 `npm i` and `npm start` and you should see a dashboard at `localhost:3000`
@@ -9,7 +9,7 @@ The visualization requires a geojson file (exported into js) of polygons and a j
 If "NIL", or "SEZCENS", is the unique identifier of a polygon (a feature in the geojson file), results.js elements must have a property "NIL", or "SEZCENS", containing the identifiers of each polygon. Each other property in the results.js file is a different dataset to be associated to each polygon.
 
 ## Json file
-To get the results.js file we need Istat data [aggregated on "sezioni di censimento"](src/data/Milano/preprocessing/istat_2011_Milano.csv), a mapping between "sezioni di censimento" and our polygons, and we need to apply some formulas  
+To get the results.js file we need Istat data [aggregated on "sezioni di censimento"](src/data/Milano/preprocessing/istat_2011_Milano.csv), a mapping between "sezioni di censimento" and our polygons, and we need to apply some formulas.  
 ### Extracting Istat data
 Istat data has been downloaded from ISTAT at this [link](http://www.istat.it/storage/cartografia/variabili-censuarie/dati-cpa_2011.zip), subfolder "Sezioni di censimento" (documentation available [here](https://www.istat.it/it/files/2013/11/Descrizione-dati-Pubblicazione-2016.03.09.pdf)). Data for a specific "comune" has been extracted as follows:
 
