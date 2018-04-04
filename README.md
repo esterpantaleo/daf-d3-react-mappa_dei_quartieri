@@ -4,7 +4,7 @@ A [d3.js](https://d3js.org) dashboard using React built with [Create React App](
 `npm i` and `npm start` and you should see a dashboard at `localhost:3000`
 
 # Input data
-The visualization requires a geojson file of polygons and a csv file (turned into js: results.js) with a number of rows equal to the number of polygons and containing data to be associated to each polygon. If "NIL", or "SEZCENS", is the unique identifier of a polygon (a feature in the geojson file), results.js must have a column with header "NIL", or "SEZCENS", containing the identifiers of each polygon. Each other column in the results.js file is a different dataset to be associated to each polygon.
+The visualization requires a geojson file of polygons and a json file (turned into js: results.js) with a number of elements equal to the number of polygons and containing data to be associated to each polygon. If "NIL", or "SEZCENS", is the unique identifier of a polygon (a feature in the geojson file), results.js elements must have a property "NIL", or "SEZCENS", containing the identifiers of each polygon. Each other property in the results.js file is a different dataset to be associated to each polygon.
 
 ## Csv file
 To get the results.js file we need Istat data [aggregated on "sezioni di censimento"](src/data/istat_2011_Milano.csv), a mapping between "sezioni di censimento" and our polygons, and we need to apply some formulas  
