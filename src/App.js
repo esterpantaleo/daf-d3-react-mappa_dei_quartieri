@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import './App.css';
 import Map from './Map';
 import BarChart from './BarChart';
-import geojson from './NILZone.EPSG4326.js';
-import results from './results.js'; 
+import geojson from './data/Milano/NILZone.EPSG4326.js';
+import results from './data/Milano/results.js'; 
 import { range } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 
