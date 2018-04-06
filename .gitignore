@@ -16,3 +16,12 @@ npm-debug.log
 package-lock.json
 *~
 README.txt
+
+*.prj
+*.sbn
+*.shx
+*.sbx
+*.shp
+*.dbf
+*.xml
+lazio_sez_cens.geojson

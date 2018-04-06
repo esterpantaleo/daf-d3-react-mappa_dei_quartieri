@@ -73,7 +73,8 @@ From the Istat data and from the area of the polygons, in R:
     #Write results file
     write.table(results, "results.csv", row.names=FALSE, sep=";", quote=FALSE)
     
-
+### Dati
+geojson roma downloaded from http://www.iptsat.com/index.php/it/download (dated 2013)
 
 
 
