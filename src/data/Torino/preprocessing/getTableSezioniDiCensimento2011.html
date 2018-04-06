@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>get Table of intersection between neighborhoods (NILs or circoscrizioni or zone statistiche) and Sezioni Di Censimento</title>
+    <script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/d3-queue.v3.min.js"></script>
+  </head>
+  <body>
+
+    <script>
+      var i = 1;
+      var options = [
+      {
+          city: "Milano",
+          geojsonBiggerFile: "./NILZone.EPSG4326.geojson",
+          geojsonSmallerFile: "./ds98_infogeo_sezioni_censimento_localizzazione_2011c.EPSG4326.geojson",
+          featureBig: "NIL",
+          featureSmall: "SEZ",
+          area: "AreaMQ"
+      },
+      {
+          city: "Torino",
+          geojsonSmallerFile: "./0_geo_zone_sezioni_censimento_wgs84.geojson",
+          featureBig: "NCIRCO", 
+          featureMedium: "ZONASTAT",
+          featureSmall: "SEZCENS",
+          area: "SUPERF"
+      }];
+
+      
+      console.log(options[i]["geojsonSmallerFile"])
+      d3.queue(2).defer(d3.json, options[i]["geojsonSmallerFile"])
+          .await((error, geojsonSmaller) => {      
+              //print area and units
+              var txt = geojsonSmaller.features.map((n) => {
+                  console.log("processing " + n);
+      
+                  return n.properties[options[i]["featureSmall"]] + ";" + n.properties[options[i]["featureMedium"]]  + ";" + n.properties[options[i]["featureBig"]] + ";" + n.properties[options[i]["area"]] + "****";
+              }).join("");
+              d3.select("body").append("p").html(txt);
+          });
+    </script>
+  </body>
+  </html>
