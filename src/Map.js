@@ -9,10 +9,13 @@ class Map extends Component {
 
     constructor(props: Props) {
 	super(props);
-	this.state = { hoverElement: props.hoverElement };
+	this.state = {
+	    hoverElement: props.hoverElement,
+	    city: props.city
+	};
     }
-    
-    componentDidMount() {
+
+    createMap() {
 	this.map = new mapboxgl.Map({
             container: this.mapContainer,
             style: 'mapbox://styles/mapbox/light-v9',
@@ -24,15 +27,15 @@ class Map extends Component {
 	    var map = this.map;
 	    var props = this.props;
 	    map.addSource('Quartieri', {type: 'geojson', data: props.data});
-	        var layers = map.getStyle().layers;
-	        // Find the index of the first symbol layer in the map style
-	        var firstSymbolId;
-	        for (var i = 0; i < layers.length; i++) {
-		    if (layers[i].type === 'symbol') {
-		        firstSymbolId = layers[i].id;
-		        break;
-		    }
-	        }
+	    var layers = map.getStyle().layers;
+	    // Find the index of the first symbol layer in the map style
+	    var firstSymbolId;
+	    for (var i = 0; i < layers.length; i++) {
+		if (layers[i].type === 'symbol') {
+		    firstSymbolId = layers[i].id;
+		    break;
+		}
+	    }
 	    
 	    map.addLayer({
 		id: 'Quartieri',
@@ -71,14 +74,28 @@ class Map extends Component {
 	});
     }
 
+    componentDidMount() {
+	this.createMap();
+    }
+
     componentDidUpdate() {
 	const props = this.props;
 	if (props.hoverElement !== 'none') {
 	    this.map.setFilter('Quartieri-hover', ['==', props.unit, props.hoverElement]);
 	}
+	if (props.city !== this.state.city) {
+            this.map.remove();
+            this.createMap();
+	    this.setState({city: this.props.city});
+	}
     }
 	    
     render() {
+	/*if (this.props.city !== this.state.city) {
+	    this.map.remove();
+	    this.componentDidMount();
+	    this.state.city = this.props.city;
+	}*/
 	return (
                 <div
 	            ref={el => this.mapContainer = el}
