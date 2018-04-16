@@ -6,6 +6,7 @@ import { legendColor } from 'd3-svg-legend';
 import { select } from 'd3-selection';
 import { scaleLinear } from 'd3-scale';
 import { transition } from 'd3-transition';
+import { axisBottom } from 'd3-axis';
 
 function round(x) {
     for (var i = 0; i < 7; i++) {
@@ -54,30 +55,66 @@ class BarChart extends Component {
     };
 	
     setLegend() {
-	select("g.legend").remove();
-	
-	const node = this.node;
-	
-	const legend = legendColor()
-              .scale(this.props.colorScale)
-              .labelFormat(format('.5f'));
+	select("#defs").remove();
+	select("#legend").remove();
+	select(".axis").remove(); 
 
-        select(node)
-            .selectAll("g.legend")
-            .data([0])
+	var chartContainer = this.chartContainer;
+	
+	var legendWidth = 300,
+            legendHeight = 20;
+	var legendData = this.props.colors.stops,
+            legendValues = legendData.map(d => d[0]),
+            legendMax = Math.max(...legendValues),
+            legendMin = Math.min(...legendValues);
+        
+        var barLegend = select(chartContainer)
+            .append("defs")
+            .append("svg:linearGradient")
+            .attr("id", "gradient")
+            .attr("x1", "0%")
+            .attr("y1", "100%")
+            .attr("x2", "100%")
+            .attr("y2", "100%")
+            .attr("spreadMethod", "pad");
+
+        barLegend.selectAll(".stop")
+            .data(legendData)
             .enter()
+            .append("stop")
+            .attr("offset", (d, i) => {
+                return (100 * i / (legendData.length - 1)) + "%";
+            })
+            .attr("stop-color", d => d[1])
+            .attr("stop-opacity", 1);
+
+        select(chartContainer)
+	    .append("rect")
+	    .attr("id", "legend")
+            .attr("width", legendWidth)
+            .attr("height", legendHeight)
+            .style("fill", "url(#gradient)")
+            .attr("transform", "translate(20,680)");
+
+        var y = scaleLinear()
+            .range([legendWidth, 0])
+            .domain([legendMax, legendMin]);
+        var yAxis = axisBottom()
+            .scale(y)
+            .ticks(5);
+
+        select(chartContainer)
             .append("g")
-            .attr("class", "legend")
-            .call(legend);
-	select(node)
-            .select("g.legend")
-            .attr("transform", "translate(15, 330)");
+            .attr("class", "axis")
+            .attr("transform", "translate(20,700)")
+            .call(yAxis)
+
     };
 
     setDescription() {
 	var index = this.props.data.map(d => d.properties[this.props.unit]).indexOf(this.props.hoverElement);
         if (index > -1) {
-            select('#' + this.props.unit)
+            select('#description')
                 .text(this.props.unit + ": "  + this.props.data[index].properties[this.props.unit]);
             select("#property")
                 .text(this.props.propertyLabel + ": " + round(this.props.data[index].properties[this.props.property]));
@@ -87,8 +124,8 @@ class BarChart extends Component {
     setValueLabel() {
 	select(".bartext").remove();
 	
-	const node = this.node;
-	select(node)
+	const chartContainer = this.chartContainer;
+	select(chartContainer)
             .append("text")
             .attr("class", "bartext")
             .attr("text-anchor", "left")
@@ -98,9 +135,9 @@ class BarChart extends Component {
     };
 	
     setLabel() {
-	const node = this.node;
+	const chartContainer = this.chartContainer;
 	
-	select(node)
+	select(chartContainer)
             .append("text")
             .attr("class", "bartitle")
             .attr("text-anchor", "left")
@@ -110,21 +147,21 @@ class BarChart extends Component {
     };
     
     createBarChart() {
-	const node = this.node;
+	const chartContainer = this.chartContainer;
 	
-	select(node)
+	select(chartContainer)
 	    .append("text")
-	    .attr("id", this.props.unit)
+	    .attr("id", "description")
 	    .attr("x", 20)
 	    .attr("y", 50)
 
-	select(node)
+	select(chartContainer)
 	    .append("text")
 	    .attr("id", "property")
 	    .attr("x", 20)
 	    .attr("y", 60 + this.barWidth * 2)
 
-	select(node)
+	select(chartContainer)
 	    .selectAll("rect.bar")
 	    .data(this.props.data)
 	    .enter()
@@ -132,21 +169,21 @@ class BarChart extends Component {
             .attr("class", "bar")
             .on("mouseover", this.props.onHover);
 	
-	select(node)
+	select(chartContainer)
 	    .selectAll("rect.bar")
 	    .data(this.props.data)
 	    .exit()
             .remove();
 	
-	select(node)
+	select(chartContainer)
 	    .selectAll("rect.bar")
 	    .data(this.props.data)
-            .attr("y", (d,i) => 100 + i * this.barWidth)
+            .attr("y", (d, i) => 100 + i * this.barWidth)
             .attr("x", d => 260 - this.yScale(d.properties[this.props.property]))
             .attr("width", d => this.yScale(d.properties[this.props.property]))
             .attr("height", this.barWidth)
             .style("fill", d => {
-		return this.props.hoverElement === d.properties[this.props.unit] ? this.props.highlightColor : this.props.colorScale(d.properties[this.props.property]);
+		return this.props.hoverElement === d.properties[this.props.unit] ? this.props.colors.highlight : this.props.colors.scale(d.properties[this.props.property]);
 	    })
             .style("stroke", "black")
             .style("stroke-opacity", 0.25);
@@ -156,7 +193,7 @@ class BarChart extends Component {
     
     render() {
 	return <svg
-                   ref={node => this.node = node}
+                   ref={el => this.chartContainer = el}
                    width={900}
                    height={950}
 	       />

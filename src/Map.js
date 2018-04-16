@@ -11,7 +11,8 @@ class Map extends Component {
 	super(props);
 	this.state = {
 	    hoverElement: props.hoverElement,
-	    city: props.city
+	    city: props.options.city,
+	    property: props.property
 	};
     }
 
@@ -19,8 +20,8 @@ class Map extends Component {
 	this.map = new mapboxgl.Map({
             container: this.mapContainer,
             style: 'mapbox://styles/mapbox/light-v9',
-            center: this.props.quartieri.center,
-            zoom: this.props.quartieri.zoom
+            center: this.props.options.center,
+            zoom: this.props.options.zoom
         });
 
 	this.map.on('load', () => {
@@ -29,10 +30,10 @@ class Map extends Component {
 	    map.addSource('Quartieri', {type: 'geojson', data: props.data});
 	    var layers = map.getStyle().layers;
 	    // Find the index of the first symbol layer in the map style
-	    var firstSymbolId;
+	    this.firstSymbolId;
 	    for (var i = 0; i < layers.length; i++) {
 		if (layers[i].type === 'symbol') {
-		    firstSymbolId = layers[i].id;
+		    this.firstSymbolId = layers[i].id;
 		    break;
 		}
 	    }
@@ -43,25 +44,25 @@ class Map extends Component {
 		paint: {'fill-opacity': 1},
 		layout: {},
 		source: 'Quartieri'
-	    }, firstSymbolId);
+	    }, this.firstSymbolId);
 	    map.setPaintProperty('Quartieri', 'fill-color', {
 		property: props.property,
-		stops: props.stops
+		stops: props.colors.stops
 	    });
 	    map.addLayer({
 		id: 'Quartieri-hover',
 		type: "fill",
 		source: 'Quartieri',
 		layout: {},
-		paint: {"fill-color": props.highlightColor, "fill-opacity": 1},
+		paint: {"fill-color": props.colors.highlight, "fill-opacity": 1},
 		filter: ["==", props.unit, props.hoverElement]
-	    }, firstSymbolId);
+	    }, this.firstSymbolId);
 	    map.addLayer({
 		id: 'Quartieri-line',
 		type: 'line',
 		paint: {'line-opacity': 0.25},
 		source: 'Quartieri'
-	    }, firstSymbolId); 
+	    }, this.firstSymbolId); 
 	    map.on('mousemove', 'Quartieri', function(e) {
 		map.setFilter('Quartieri-hover', ['==', props.unit, e.features[0].properties[props.unit]]);
 		var features = map.queryRenderedFeatures(e.point);
@@ -76,33 +77,28 @@ class Map extends Component {
 
     componentDidMount() {
 	this.createMap();
-    }
-
+    };
+    
     componentDidUpdate() {
 	const props = this.props;
 	if (props.hoverElement !== 'none') {
 	    this.map.setFilter('Quartieri-hover', ['==', props.unit, props.hoverElement]);
 	}
-	if (props.city !== this.state.city) {
+	if (props.options.city !== this.state.city || props.property !== this.state.property) {
             this.map.remove();
             this.createMap();
-	    this.setState({city: this.props.city});
+	    this.setState({city: props.options.city, property: props.property});
 	}
-    }
+    };
 	    
     render() {
-	/*if (this.props.city !== this.state.city) {
-	    this.map.remove();
-	    this.componentDidMount();
-	    this.state.city = this.props.city;
-	}*/
 	return (
                 <div
 	            ref={el => this.mapContainer = el}
-	            style={{ height: "90vh", width: "70vw" }}
-		/>
+	            style={{ height: "90vh", width: "70vw" }}>
+		</div>
 	);
-    }
+    };
 }
     
 export default Map;

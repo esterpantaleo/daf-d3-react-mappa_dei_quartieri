@@ -4,6 +4,7 @@ import Map from './Map';
 import BarChart from './BarChart';
 import Button from './Button';
 import Menu from './Menu';
+import results from './data/Milano/results.js';
 import geojsonMilano from './data/Milano/NILZone.EPSG4326.js';
 import geojsonTorino from './data/Torino/0_geo_zone_sezioni_censimento_wgs84.js';
 import menu from './data/menu.js';
@@ -17,25 +18,60 @@ function onlyUnique(value, index, self) {
 class App extends Component {
     constructor(props) {
 	super(props);
-	this.onHover = this.onHover.bind(this);
-	this.indicators = this.getIndicators(menu);
-	this.cities = this.indicators.map(i => i.city).filter(onlyUnique);
+
+	this.layers = this.getLayers();
+	this.cities = this.getCities();
+	this.colors = {
+	    intervals: ['#FFFFDD',
+			'#AAF191',
+			'#80D385',
+			'#61B385',
+			'#3E9583',
+			'#217681',
+			'#285285',
+			'#1F2D86',
+			'#000086'],
+	    highlight: 'black'
+	};
+	this.geojson = geojsonTorino;
+	
 	this.state = {
 	    city: "Torino",
-	    hover: "none",
+	    layer: this.getDefaultLayer("Torino"),
+	    hover: "none"
 	};
-	this.handleClick = this.handleClick.bind(this);
-	this.highlightColor = 'black';
-	this.colorIntervals = ['#FFFFDD','#AAF191','#80D385','#61B385','#3E9583','#217681','#285285','#1F2D86','#000086'];
-	this.initializeMap();
+
+	this.setSource(this.state.city);
+        this.setLayer(this.state.layer);
+	
+	this.changeCity = this.changeCity.bind(this);
+	this.changeLayer = this.changeLayer.bind(this);
+	this.onHover = this.onHover.bind(this);
     };
 
-    getIndicators(menu) {
-	var indicators = [];
+    getDefaultLayer(city) {
+	if (this.layers === undefined) {
+            this.layers = this.getLayers();
+	}
+
+	var cityLayers = this.layers.filter(l => l.city === city);
+	var defaultLayer = cityLayers.filter(l => (l.default !== undefined && l.default))[0];
+	return defaultLayer; 
+    };
+    
+    getCities() {
+	if (this.layers === undefined) {
+	    this.layers = this.getLayers();
+	}
+	return this.layers.map(i => i.city).filter(onlyUnique);
+    };
+    
+    getLayers() {
+	var layers = [];
 	
 	menu.forEach(m => {
             if (m.indicators !== undefined) {
-		indicators = indicators.concat(m.indicators.map(c => {
+		layers = layers.concat(m.indicators.map(c => {
                     if (m.type === "source") {
 			return {
                             id: c.id,
@@ -43,7 +79,8 @@ class App extends Component {
 			    category: c.category,
                             sourceId: m.id,
                             sourceUrl: m.url,
-                            city: m.city
+                            city: m.city,
+			    default: c.default
 			};
                     } else if (m.type === "layer") {
 			var sourceUrl = menu.filter(d => d.id === m.sourceId)[0].url;
@@ -55,117 +92,140 @@ class App extends Component {
                             layerUrl: m.url,
                             sourceId : m.sourceId,
                             sourceUrl: sourceUrl,
-                            city: m.city
+                            city: m.city,
+			    default: c.default
 			};
                     }
 		}))
 	    }
 	});
-	return indicators;
+	return layers;
     };
 
-    getCityCategories() {
-	var cityIndicators = this.indicators.filter(i => i.city === this.state.city);
-	return cityIndicators.map(i => i.category)
+    getMenu() {
+	var cityLayers = this.layers.filter(i => i.city === this.state.city);
+	var appMenu = cityLayers.map(i => i.category)
             .filter(onlyUnique)
             .map(c => {
-		var subcategories = cityIndicators.filter(i => i.category === c);
+		var subcategories = cityLayers.filter(i => i.category === c);
 		return { category: c, subcategories: subcategories };
             });
+	return appMenu;
     };
     
     onHover(d) {
 	this.setState({ hover: d.properties[this.joinField] })
     };
 
-    initializeMap() {
-	var item =  menu.filter(m => m.city === this.state.city).filter(m => m.id === "quartieri" + this.state.city)[0];
-	this.center = item.center;
-	this.zoom = item.zoom;
-	this.joinField = item.joinField;
+    setSource(city) {
+	var source =  menu.filter(m => m.city === city).filter(m => m.id === "quartieri" + city)[0];
+	this.center = source.center;
+        this.zoom = source.zoom;
+        this.joinField = source.joinField;
+    };
 
-	this.property = item.indicators.filter(i => (i.label ==="Area" || i.label === "Area (mq)"))[0].id;
-	this.propertyLabel = "Area";
-
-	var geojson;
-	if (this.state.city === "Milano") {
-	    geojson = geojsonMilano;
-	} else if (this.state.city === "Torino") {
-	    geojson = geojsonTorino;
+    setLayer(l) {
+	if (this.layers.filter(i => i.id === l.id)[0].layerUrl === undefined) {
+	    this.features = this.geojson
+		.features
+		.sort((a, b) => b.properties[l.id] - a.properties[l.id]);
+	} else {
+	    var data = results;
+	    var joinField = this.joinField;
+	    this.features = this.geojson.features;
+	    var quartieri = data.map((d) => d[joinField]);
+	    
+	    this.features.forEach((d) => {
+		var index = quartieri.indexOf(d.properties[joinField]);
+		d.properties[l.id] = data[index][l.id];
+	    });
+	    this.features = this.features.sort((a, b) => b.properties[l.id] - a.properties[l.id]);
 	}
-	//extract features from geojson                             
-	//attach additional properties to these features from results.js (i.e. variable "results")                                                      
-	var property = this.property;
-	this.features = geojson.features
-	    .sort((a, b) => b.properties[property] - a.properties[property]);
-	//define color scale  
-	var arrayProperty = geojson.features.map((d) => d.properties[property]);
-	var minProperty = Math.min(...arrayProperty),
-	    maxProperty = Math.max(...arrayProperty);
-	var C = this.colorIntervals.length;
-	var intervalsProperty = [...Array(C).keys()]
-	    .map((d) => d * (maxProperty - minProperty) / C  + minProperty);
+	this.setColors(l.id);
+    };
+
+    setColors(id) {
+        var values = this.features.map((d) => d.properties[id]);
 	
-	//color scale for mapbox                                          
-	this.stops = intervalsProperty.map((d, i) => [intervalsProperty[i], this.colorIntervals[i]]);
-	//color scale for d3                                            
-	this.colorScale = scaleLinear().domain(intervalsProperty).range(this.colorIntervals);
+        var min = Math.min(...values),
+            max = Math.max(...values);
+        var C = this.colors.intervals.length;
+
+        var intervals = [...Array(C).keys()]
+            .map((d) => d * (max - min) / C  + min);
+        //color scale for mapbox
+        this.colors.stops = intervals.map((d, i) => [intervals[i], this.colors.intervals[i]]);
+        //color scale for d3  
+        this.colors.scale = scaleLinear().domain(intervals).range(this.colors.intervals);
+    };
+
+    changeCity(d, label) {
+        if (this.state.city !== label) {
+            this.setState({ city: label });
+        }
+    };
+
+    changeLayer(d) {
+        if (this.state.layer.id !== d.id) {
+            this.setState({ layer: d });
+        }
     };
     
-    handleClick(d, label) {
-	if (this.state.city !== label) {
-	    this.setState({ city: label });
+    componentWillUpdate(nextProps, nextState) {
+	if (nextState.city !== this.state.city) {
+	    if (nextState.city === "Milano") {
+		this.geojson = geojsonMilano;
+            } else if (nextState.city === "Torino") {
+                this.geojson = geojsonTorino;
+            }
+	    this.setSource(nextState.city);
+	    this.setState({ layer: this.layers.filter(l => l.city === nextState.city).filter(l => l.label.startsWith("Area"))[0] }); 
+	} else if (nextState.layer.id !== this.state.layer.id) {
+	    this.setLayer(nextState.layer);
 	}
     };
-/*
-    componentDidUpdate() {
-	this.initializeMap();
-    };
-  */  
+        
     render() {
-	this.initializeMap();
 	return (
-		<div className="App">
+           <div className="App">
 		<div className="App-header">
 		    <div style={{ display: "flex", justifyContent: "space-between" }}>
-		        <Menu menu={this.getCityCategories(this.indicators)}/> 
+		        <Menu
+	                    menu={this.getMenu(this.layers)}
+	                    handleClick={this.changeLayer}/> 
 		        <h2>Mappa dei quartieri di {this.state.city}</h2>
                 
 		        <div>
 		            {this.cities.map(city =>
 				      <Button
-				       handleClick={this.handleClick}
+				       handleClick={this.changeCity}
 				       label={city}/>)}
 		        </div>
 		    </div>
 		</div>
-		    
 		<div style={{ display: "flex" }}>
-		        <Map
-                            city={this.state.city}	                    
+		       <Map
 	                    hoverElement={this.state.hover}
 	                    onHover={this.onHover}
-	                    stops={this.stops}
-	                    highlightColor={this.highlightColor}
+	                    options={{city: this.state.city, center: this.center, zoom: this.zoom}} 
+	                    colors={this.colors}
 	                    data={{type: "FeatureCollection", features: this.features}}
-	                    property={this.property}
+	                    property={this.state.layer.id}
 	                    unit={this.joinField}
-	                    quartieri={{center: this.center, zoom: this.zoom}}
 		        />
 	                <div style={{ width: "25vw" }}>
 	                    <BarChart
 	                        hoverElement={this.state.hover}
 	                        onHover={this.onHover}
-	                        colorScale={this.colorScale}
-	                        highlightColor={this.highlightColor}
+	                        colors={this.colors}
 	                        data={this.features}
-   	                        property={this.property}
-	                        propertyLabel={this.propertyLabel}
+   	                        property={this.state.layer.id}
+	                        propertyLabel={this.state.layer.label}
 	                        unit={this.joinField}
 		            />   
-	                </div>        	    
-		    </div>
-		</div>
+	                </div>
+		</div>	
+            </div>
 	)
     };
 }
