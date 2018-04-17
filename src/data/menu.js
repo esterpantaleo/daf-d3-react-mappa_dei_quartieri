@@ -7,11 +7,12 @@ export default [
     center : [9.191383, 45.464211],
     zoom : 11,
     joinField : "NIL",
+    default : true,
     indicators : [{
 	category : "Dati Geografici",
 	label : "Area (mq)",
 	id : "AreaMQ",
-	default : true
+	default: true
     }]
 },{
     id : "vitalitaMilano",
@@ -32,15 +33,36 @@ export default [
     id : "quartieriTorino",
     city: "Torino",
     type : "source",
-    url : "localhost:3000/Torino/0_geo_zone_sezioni_censimento_wgs84.json",
+    url : "localhost:3000/Torino/0_geo_zone_circoscrizioni_wgs84.json",
     center : [7.6869, 45.0703],
     zoom : 10.5,
-    joinField : "SEZCENS",
+    joinField : "NCIRCO",
+    indicators : [],
+    default : true
+},{
+    id : "dataTorino",
+    city : "Torino",
+    type : "layer",
+    sourceId : "quartieriTorino",
+    url : "localhost:3000/Torino/results.json",
     indicators : [{
+	category : "Vitalità",
+	label : "Tipi di Alloggio",
+	id : "tipiAlloggio2"
+    },{
+	category : "Vitalità",
+	label : "Densità di occupati (per mq)",
+	id : "densitaOccupati2"
+    },{
 	category : "Dati Geografici",
 	label : "Area",
 	id : "SUPERF",
-	default : true
+	default: true
+    },{
+	category : "Popolazione",
+	label : "Numero di residenti",
+	id : "residenti"
     }]
-}]
+}
+]
     

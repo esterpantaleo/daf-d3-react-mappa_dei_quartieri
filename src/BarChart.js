@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import { format } from 'd3-format';
-import { max } from 'd3-array';
+import { max, min } from 'd3-array';
 import { legendColor } from 'd3-svg-legend';
 import { select } from 'd3-selection';
 import { scaleLinear } from 'd3-scale';
@@ -11,7 +11,7 @@ import { axisBottom } from 'd3-axis';
 function round(x) {
     for (var i = 0; i < 7; i++) {
 	var multiplier = Math.pow(10, i);
-	if (x * multiplier > 0) {
+	if (x * multiplier > 100) {
 	    return Math.round(x * multiplier) / multiplier;
 	}
     }
@@ -20,38 +20,35 @@ function round(x) {
 
 class BarChart extends Component {
     yScale;
-    barWidth = 7;
+    barWidth;
     
     constructor(props){
 	super(props);
-	this.createBarChart = this.createBarChart.bind(this);
 	this.state = {
 	    hoverElement: props.hoverElement,
-	    data: props.data,
-	    property: props.property
+	    city: props.data.city,
+	    layer: props.data.headers[1]
 	};
+	
+	this.createBarChart = this.createBarChart.bind(this);
     };
 
-    componentDidMount() {
+    createChart() {
 	this.setLabel();
-	this.setYScale();
-	this.setValueLabel();
-	this.setLegend();
-	this.createBarChart();
-    };
-
-    componentDidUpdate() {
-	this.setYScale();
-	this.setValueLabel();
-	this.setLegend();
+        this.setYScale();
+        this.setLegend();
         this.createBarChart();
+    };
+    
+    componentDidMount() {
+	this.createChart();
     };
 
     setYScale() {
-	const dataMax = max(this.props.data.map(d => d.properties[this.props.property]));
+	const dataMax = max(this.props.data.values.map(d => d[1]));
 	this.yScale = scaleLinear()
             .domain([0, dataMax])
-            .range([0, 150]);
+            .range([0, 200]);
     };
 	
     setLegend() {
@@ -63,10 +60,10 @@ class BarChart extends Component {
 	
 	var legendWidth = 300,
             legendHeight = 20;
-	var legendData = this.props.colors.stops,
+	var legendData = this.props.data.colors.stops,
             legendValues = legendData.map(d => d[0]),
-            legendMax = Math.max(...legendValues),
-            legendMin = Math.min(...legendValues);
+            legendMax = max(legendValues),
+            legendMin = min(legendValues);
         
         var barLegend = select(chartContainer)
             .append("defs")
@@ -94,7 +91,7 @@ class BarChart extends Component {
             .attr("width", legendWidth)
             .attr("height", legendHeight)
             .style("fill", "url(#gradient)")
-            .attr("transform", "translate(20,680)");
+            .attr("transform", "translate(100,730)");
 
         var y = scaleLinear()
             .range([legendWidth, 0])
@@ -106,44 +103,111 @@ class BarChart extends Component {
         select(chartContainer)
             .append("g")
             .attr("class", "axis")
-            .attr("transform", "translate(20,700)")
+            .attr("transform", "translate(100,760)")
             .call(yAxis)
 
     };
 
-    setDescription() {
-	var index = this.props.data.map(d => d.properties[this.props.unit]).indexOf(this.props.hoverElement);
-        if (index > -1) {
-            select('#description')
-                .text(this.props.unit + ": "  + this.props.data[index].properties[this.props.unit]);
-            select("#property")
-                .text(this.props.propertyLabel + ": " + round(this.props.data[index].properties[this.props.property]));
-        }
+    createBarTooltip() {
+	const chartContainer = this.chartContainer;
+
+	var size = 15;
+	select(chartContainer)
+	    .selectAll("text.tooltip")
+	    .data(this.props.data.values)
+	    .enter()
+	    .append("text")
+	    .attr("class", "tooltip");
+	select(chartContainer)
+	    .selectAll("text.tooltip")
+	    .data(this.props.data.values)
+	    .exit()
+	    .remove();
+	select(chartContainer)
+	    .selectAll("text.tooltip")
+	    .data(this.props.data.values)
+	    .attr("text-anchor", "left")
+	    .attr("x", d => 300 - this.yScale(d[1]))
+	    .attr("y", (d, i) => 70 + 0.4 * size + (i + 0.5) * this.barWidth)
+	    .attr("color", "white")
+	    .text(d => round(d[1]))
+	    .style("visibility", (d, i) => {
+		return (this.props.hoverElement === d[0] || (this.props.hoverElement === "none" && i === 0)) ? "visible" : "hidden";
+	    })
+	    .style("font-size", size);
+	
+	select(chartContainer)
+	    .selectAll("rect.tooltip")
+	    .data(this.props.data.values)
+	    .enter() 
+	    .append("rect")
+	    .attr("class", "tooltip");
+	select(chartContainer)
+	    .selectAll("rect.tooltip")
+	    .data(this.props.data.values)
+	    .exit()
+	    .remove();
+	select(chartContainer)
+	    .selectAll("rect.tooltip")
+	    .data(this.props.data.values)   
+	    .attr("x", d =>  300 - this.yScale(d[1]) - size * 0.6)
+	    .attr("y",  (d, i) => 70 + (i + 0.5) * this.barWidth - 1.5/2 * size)
+	    .attr("width", d => round(d[1]).toString().length * size * 0.7)
+	    .attr("height", 1.5 * size)
+	    .style("fill", "black")
+	    .style("fill-opacity", ".3")
+	    .style("stroke", "black")
+	    .style("stroke-width", "1.5px")
+	    .style("visibility", (d, i) => {
+                return (this.props.hoverElement === d[0] || (this.props.hoverElement === "none" && i === 0)) ? "visible" : "hidden";
+            });
+
+	select(chartContainer)
+	    .selectAll("line.tooltip")
+	    .data(this.props.data.values)
+            .enter()
+            .append("line")
+            .attr("class", "tooltip");
+	select(chartContainer)
+            .selectAll("line.tooltip")
+            .data(this.props.data.values)
+            .exit()
+            .remove();
+        select(chartContainer)
+            .selectAll("line.tooltip")
+            .data(this.props.data.values)
+	    .attr("x1", d => 300 - this.yScale(d[1]) + round(d[1]).toString().length * size * 0.7 - size * 0.7)
+            .attr("y1", (d, i) => 70 + (i + 0.5) * this.barWidth)
+            .attr("x2", d => 400 - this.yScale(d[1]))
+            .attr("y2", (d, i) => 70 + (i + 0.5) * this.barWidth)
+	    .style("stroke", "#666")
+	    .style("stroke-width", "1.5px")
+	    .style("visibility", (d, i) => {
+		return (this.props.hoverElement === d[0] || (this.props.hoverElement === "none" && i === 0)) ? "visible" : "hidden";
+            });
     };
 
-    setValueLabel() {
-	select(".bartext").remove();
-	
-	const chartContainer = this.chartContainer;
-	select(chartContainer)
-            .append("text")
-            .attr("class", "bartext")
-            .attr("text-anchor", "left")
-            .attr("x", 190 - this.yScale(this.props.data[0].properties[this.props.property]))
-            .attr("y", 110)
-            .text(round(this.props.data[0].properties[this.props.property]));
-    };
-	
     setLabel() {
-	const chartContainer = this.chartContainer;
+	select(".bartitle").remove();
 	
-	select(chartContainer)
+        const chartContainer = this.chartContainer;
+        select(chartContainer)
             .append("text")
             .attr("class", "bartitle")
             .attr("text-anchor", "left")
             .attr("x", 80)
             .attr("y", 20)
-            .text(this.props.propertyLabel);
+            .text(this.props.data.label);
+    };
+    
+    setDescription() {
+	select('#description').text("");
+		
+	var index = this.props.data.values.map(d => d[0]).indexOf(this.props.hoverElement);
+        if (index > -1) {
+            select('#description')
+                .text(this.props.data.headers[0] + ": "  + this.props.data.values[index][0]);
+        }
     };
     
     createBarChart() {
@@ -163,7 +227,7 @@ class BarChart extends Component {
 
 	select(chartContainer)
 	    .selectAll("rect.bar")
-	    .data(this.props.data)
+	    .data(this.props.data.values)
 	    .enter()
 	    .append("rect")
             .attr("class", "bar")
@@ -171,30 +235,34 @@ class BarChart extends Component {
 	
 	select(chartContainer)
 	    .selectAll("rect.bar")
-	    .data(this.props.data)
+	    .data(this.props.data.values)
 	    .exit()
             .remove();
 	
 	select(chartContainer)
 	    .selectAll("rect.bar")
-	    .data(this.props.data)
-            .attr("y", (d, i) => 100 + i * this.barWidth)
-            .attr("x", d => 260 - this.yScale(d.properties[this.props.property]))
-            .attr("width", d => this.yScale(d.properties[this.props.property]))
+	    .data(this.props.data.values)
+            .attr("y", (d, i) => 70 + i * this.barWidth)
+            .attr("x", d => 400 - this.yScale(d[1]))
+            .attr("width", d => this.yScale(d[1]))
             .attr("height", this.barWidth)
             .style("fill", d => {
-		return this.props.hoverElement === d.properties[this.props.unit] ? this.props.colors.highlight : this.props.colors.scale(d.properties[this.props.property]);
+		return this.props.hoverElement === d[0] ? this.props.data.colors.highlight : this.props.data.colors.scale(d[1]);
 	    })
             .style("stroke", "black")
             .style("stroke-opacity", 0.25);
-
+ 
 	this.setDescription();
+	this.createBarTooltip();
     };
     
     render() {
+	this.barWidth = Math.min(18, Math.max(950 / (this.props.data.values.length * 1.5), 7));
+	console.log(this.barWidth )
+	this.createChart(); 
 	return <svg
                    ref={el => this.chartContainer = el}
-                   width={900}
+                   width={700}
                    height={950}
 	       />
     };

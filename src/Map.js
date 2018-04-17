@@ -12,7 +12,7 @@ class Map extends Component {
 	this.state = {
 	    hoverElement: props.hoverElement,
 	    city: props.options.city,
-	    property: props.property
+	    property: props.layer.id
 	};
     }
 
@@ -27,6 +27,7 @@ class Map extends Component {
 	this.map.on('load', () => {
 	    var map = this.map;
 	    var props = this.props;
+	    
 	    map.addSource('Quartieri', {type: 'geojson', data: props.data});
 	    var layers = map.getStyle().layers;
 	    // Find the index of the first symbol layer in the map style
@@ -46,16 +47,16 @@ class Map extends Component {
 		source: 'Quartieri'
 	    }, this.firstSymbolId);
 	    map.setPaintProperty('Quartieri', 'fill-color', {
-		property: props.property,
-		stops: props.colors.stops
+		property: props.layer.id,
+		stops: props.layer.colors.stops
 	    });
 	    map.addLayer({
 		id: 'Quartieri-hover',
 		type: "fill",
 		source: 'Quartieri',
 		layout: {},
-		paint: {"fill-color": props.colors.highlight, "fill-opacity": 1},
-		filter: ["==", props.unit, props.hoverElement]
+		paint: {"fill-color": props.layer.colors.highlight, "fill-opacity": 1},
+		filter: ["==", props.joinField, props.hoverElement]
 	    }, this.firstSymbolId);
 	    map.addLayer({
 		id: 'Quartieri-line',
@@ -64,12 +65,12 @@ class Map extends Component {
 		source: 'Quartieri'
 	    }, this.firstSymbolId); 
 	    map.on('mousemove', 'Quartieri', function(e) {
-		map.setFilter('Quartieri-hover', ['==', props.unit, e.features[0].properties[props.unit]]);
+		map.setFilter('Quartieri-hover', ['==', props.joinField, e.features[0].properties[props.joinField]]);
 		var features = map.queryRenderedFeatures(e.point);
 		props.onHover(e.features[0]);
             });
 	    map.on('mouseout', 'Quartieri', function() {
-		map.setFilter('Quartieri-hover', ['==', props.unit, props.hoverElement]);
+		map.setFilter('Quartieri-hover', ['==', props.joinField, props.hoverElement]);
 		
 	    });
 	});
@@ -82,12 +83,12 @@ class Map extends Component {
     componentDidUpdate() {
 	const props = this.props;
 	if (props.hoverElement !== 'none') {
-	    this.map.setFilter('Quartieri-hover', ['==', props.unit, props.hoverElement]);
+	    this.map.setFilter('Quartieri-hover', ['==', props.joinField, props.hoverElement]);
 	}
-	if (props.options.city !== this.state.city || props.property !== this.state.property) {
+	if (props.options.city !== this.state.city || props.layer.id !== this.state.property) {
             this.map.remove();
             this.createMap();
-	    this.setState({city: props.options.city, property: props.property});
+	    this.setState({city: props.options.city, property: props.layer.id});
 	}
     };
 	    
