@@ -1,52 +1,19 @@
-A [d3.js](https://d3js.org) dashboard using React built with [Create React App](https://github.com/facebookincubator/create-react-app) visualizing statistical data from ISTAT (year 2011) on the map of neighborhoods (NIL) in Milan, Italy. The application can be easily used to visualize data from different cities (Milan, Rome, Turin).
+# Introduction
+This dashboard lets users explore different neighborhoods in different cities in Italy using data from ISTAT and other public sources. Currently under development.
+
+This application uses React and has been built with [Create React App](https://github.com/facebookincubator/create-react-app).
 
 # Use
 `npm i` and `npm start` and you should see a dashboard at `localhost:3000`
 
 # Input data
-The visualization requires a geojson file (exported into js) of polygons and a json file (turned into js: results.js) with a number of elements equal to the number of polygons and containing data to be associated to each polygon (see for example files in [this folder](src/data/Milano)).
-
-If "NIL", or "SEZCENS", is the unique identifier of a polygon (a feature in the geojson file), results.js elements must have a property "NIL", or "SEZCENS", containing the identifiers of each polygon. Each other property in the results.js file is a different dataset to be associated to each polygon.
-
-## Json file
-To get the results.js file we need Istat data [aggregated on "sezioni di censimento"](src/data/Milano/preprocessing/istat_2011_Milano.csv), a mapping between "sezioni di censimento" and our polygons, and we need to apply some formulas.  
-### Extracting Istat data
-Istat data has been downloaded from ISTAT at this [link](http://www.istat.it/storage/cartografia/variabili-censuarie/dati-cpa_2011.zip), subfolder "Sezioni di censimento" (documentation available [here](https://www.istat.it/it/files/2013/11/Descrizione-dati-Pubblicazione-2016.03.09.pdf)). Data for a specific "comune" has been extracted as follows:
-
-    comune="Milano"
-
-    cd dati-cpa_2011/Sezioni\ di\ Censimento/
-    output=../istat_2011_${comune}.csv
-
-    #Print header
-    head -1 R01_indicatori_2011_sezioni.csv | awk 'BEGIN{FS=";"} BEGIN{OFS=";"}{print $6,$8,$13,$73,$138,$139,$140,$141}' >> ${output}
-
-    #Print data
-    for i in *; do echo "processing file "$i; cat ${i} | tail -n +2 | awk 'BEGIN{FS=";"} BEGIN{OFS=";"}{print $6,$8,$13,$73,$138,$139,$140,$141}' | grep ${comune} >> ${output}; done
-
-Headers correspond to:
-* P1: number of residents
-* P61: number of employed people
-* E17: number of residential buildings with one floor
-* E18: number of residential buildings with 2 floors
-* E19: number of residential buildings with 3 floors
-* E20: number of residential buildings with 4 floors or more
-* SEZ2001: identifier for "sezione di censimento"
-* COMUNE
-* AreaMQ: area of a NIL in square meters
-
-### Mapping between "sezioni di censimento" and polygons
-Istat data is aggregated over "sezioni di censimento". We need to aggregate our data over our polygons. 
-
-For this we need a mapping between "sezioni di censimento" and the polygons. The script to obtain the mapping can be found [here](src/data/Milano/preprocessing/getTableNILSezioniDiCensimento2011.html) (it uses the js library turf, i.e., the intersection of centroids of "sezioni di censimemto" and polygons). Given the mapping ([here](src/data/Milano/preprocessing/tableNILSezioniDiCensimento2011_sorted_prefixed.csv)) we use bash to join:
-
-    join -a 1 -a 2 -e'-' -1 2 -2 1 -o '0,1.1,1.3,1.4,1.5,1.6,1.7,1.8,2.2' -t ";" istat_2011_Milano.csv tableNILSezioniDiCensimento2011_sorted_prefixed.csv
+The visualization requires a geojson file (exported into js) of polygons (the neighborhhods) and json files, and a menu.json file describing the data.
 
 ## Indicators
 Two indicators have been computed:
 * tipi di alloggio (tipiAlloggio)
 * densità di occupati (densitaOccupati)
-and printed to the [results.js](src/data/Milano/results.js) file.
+and printed to the [results.js](src/data/Milano/results.js) file and [results.js](src/data/Torio/results.js) file.
 From the Istat data and from the area of the polygons, in R:
 
     data.csv <- read.csv(file="data.csv", sep=";", header=TRUE)
@@ -73,8 +40,8 @@ From the Istat data and from the area of the polygons, in R:
     #Write results file
     write.table(results, "results.csv", row.names=FALSE, sep=";", quote=FALSE)
     
-### Dati
-geojson roma downloaded from http://www.iptsat.com/index.php/it/download (dated 2013)
+## Dati
+geojson for Rome downloaded from http://www.iptsat.com/index.php/it/download (dated 2013)
 
 
 
