@@ -12,7 +12,8 @@ class Map extends Component {
 	this.state = {
 	    hoverElement: props.hoverElement,
 	    city: props.options.city,
-	    property: props.layer.id
+	    property: props.layer.id,
+	    clicked: "none"
 	};
     }
 
@@ -27,6 +28,7 @@ class Map extends Component {
 	this.map.on('load', () => {
 	    var map = this.map;
 	    var props = this.props;
+	    var self = this;
 	    
 	    map.addSource('Quartieri', {type: 'geojson', data: props.data});
 	    var layers = map.getStyle().layers;
@@ -63,7 +65,15 @@ class Map extends Component {
 		type: 'line',
 		paint: {'line-opacity': 0.25},
 		source: 'Quartieri'
-	    }, this.firstSymbolId); 
+	    }, this.firstSymbolId);
+	    map.addLayer({
+                id: 'Quartieri-click',
+                type: "fill",
+                source: 'Quartieri',
+                layout: {},
+                paint: {"fill-color": "red", "fill-opacity": 1},
+                filter: ["==", props.joinField, ""]
+            }, this.firstSymbolId);
 	    map.on('mousemove', 'Quartieri', function(e) {
 		map.setFilter('Quartieri-hover', ['==', props.joinField, e.features[0].properties[props.joinField]]);
 		var features = map.queryRenderedFeatures(e.point);
@@ -71,8 +81,14 @@ class Map extends Component {
             });
 	    map.on('mouseout', 'Quartieri', function() {
 		map.setFilter('Quartieri-hover', ['==', props.joinField, props.hoverElement]);
-		
 	    });
+	    map.on('click', 'Quartieri', function(e) {
+		var clicked = e.features[0].properties[props.joinField];
+		self.setState({ clicked: clicked });
+                map.setFilter('Quartieri-click', ['==', props.joinField, clicked]);
+		props.onClick(e.features[0]);
+            });
+
 	});
     }
 
@@ -89,15 +105,34 @@ class Map extends Component {
             this.map.remove();
             this.createMap();
 	    this.setState({city: props.options.city, property: props.layer.id});
+	    this.setState({ clicked: "none" });
 	}
     };
-	    
+
+    
     render() {
+	var color = "white";
+	var title = "Clicca su un poligono";
+	if (this.state.clicked !== "none") {
+	    console.log(this.props)
+	    if (this.state.city === "Torino") {
+		var NCIRCO = this.state.clicked;
+		var joinfield = this.props.joinField;
+		title = this.props.data.features.filter(d => d.properties[joinfield] === NCIRCO)[0].properties.DENOM;
+	    } else {
+		title = this.state.clicked;
+	    }
+	    color = "red";
+	}
+	 	
 	return (
-                <div
+           <div style={{ display: "flex", flexDirection: "column" }}>
+	        <div id="popUp" style={{ backgroundColor: color }}><p >{title}</p></div>	
+                <div id="mapContainer"
 	            ref={el => this.mapContainer = el}
-	            style={{ height: "90vh", width: "70vw" }}>
+	            style={{ height: "80vh", width: "70vw" }}>
 		</div>
+	     </div>
 	);
     };
 }

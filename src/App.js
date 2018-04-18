@@ -7,6 +7,7 @@ import Button from './Button';
 import Menu from './Menu';
 import results from './data/Milano/results.js';
 import resultsTorino from './data/Torino/results.js';
+import istruzioneTorino from './data/Torino/istruzione.js';
 import geojsonMilano from './data/Milano/NILZone.EPSG4326.js';
 import geojsonTorino from './data/Torino/0_geo_zone_circoscrizioni_wgs84.js';
 import menu from './data/menu.js';
@@ -14,7 +15,7 @@ import { range } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 
 //set default city
-var city = "Torino";
+var city = "Milano";
 
 var colors = ['#FFFFDD',
               '#AAF191',
@@ -29,39 +30,25 @@ var geojson = getGeojson(city);
 
 class App extends Component {
     colors = {};
-        
-    setDefaultLayer(city) {
-	this.defaultLayer = this.menu
-	    .layers
-            .filter(l => l.city === city)
-            .filter(l => (l.default !== undefined && l.default))[0];
-	if (this.defaultLayer === undefined) {
-	    console.log("Error: city " + city + " doesn't have a default layer, check the menu file and add property default to one of the indicators");
-	}
-    };
-
-    setDefaultSource(city) {
-	this.defaultSource = menu
-            .filter(m => m.city === city)
-            .filter(m => m.default !== undefined && m.default)[0];
-	if (this.defaultSource === undefined) {
-	    console.log("Error: city " + city + " doesn't have a default source, check the menu file and add property default to one of the sources for " + city);
-	}
-    };
 
     constructor(props) {
 	super(props);
 
-	this.setMenu(menu);
+	this.layers = this.getAllLayers(menu);
+	this.cities = this.layers
+	    .map(i => i.city)
+	    .filter(onlyUnique);
+	this.cityLayers = this.layers
+            .filter(i => i.city === city);
 	this.setDefaultSource(city);
 	this.setDefaultLayer(city);
 	
 	this.state = {
 	    city: city,
 	    layer: this.defaultLayer,
-	    hover: "none"
+	    hover: "none",
+	    clicked: "none"
 	};
-
 	
         this.center = this.defaultSource.center;
         this.zoom = this.defaultSource.zoom;
@@ -72,11 +59,12 @@ class App extends Component {
 	
 	this.changeCity = this.changeCity.bind(this);
 	this.changeLayer = this.changeLayer.bind(this);
+	this.onClickMap = this.onClickMap.bind(this);
 	this.onHoverBarChart = this.onHoverBarChart.bind(this);
 	this.onHoverMap = this.onHoverMap.bind(this);
     };
-    
-    setMenu(menu) {
+
+    getAllLayers(menu) {
 	var layers = [];
 	menu.forEach(m => {
             if (m.indicators !== undefined) {
@@ -89,6 +77,7 @@ class App extends Component {
                             sourceId: m.id,
                             sourceUrl: m.url,
                             city: m.city,
+			    dataSource : m.dataSource,
                             default: c.default
                         };
                     } else if (m.type === "layer") {
@@ -100,6 +89,7 @@ class App extends Component {
                             layerId: m.id,
                             layerUrl: m.url,
                             sourceId : m.sourceId,
+			    dataSource : m.dataSource,
                             sourceUrl: sourceUrl,
                             city: m.city,
                             default: c.default
@@ -108,18 +98,39 @@ class App extends Component {
                 }))
             }
         });
-	this.menu = { layers: layers, cities: layers.map(i => i.city).filter(onlyUnique) };
+	return layers;
+    };
+    
+    setDefaultLayer(city) {
+        this.defaultLayer = this.cityLayers
+            .filter(l => (l.default !== undefined && l.default))[0];
+        if (this.defaultLayer === undefined) {
+            console.log("Error: city " + city + " doesn't have a default layer, check the menu file and add property default to one of the indicators");
+        }
     };
 
-    getListLayers() {
-	var cityLayers = this.menu.layers.filter(i => i.city === this.state.city);
-	var listLayers = cityLayers.map(i => i.category)
+    setDefaultSource(city) {
+	this.defaultSource = menu
+            .filter(m => m.city === city)
+            .filter(m => m.default !== undefined && m.default)[0];
+        if (this.defaultSource === undefined) {
+            console.log("Error: city " + city + " doesn't have a default source, check the menu file and add property default to one of the sources for " + city);
+        }
+    };
+    
+    getMenu() {
+	var layers = this.cityLayers;
+	var categories = layers.map(i => i.category)
             .filter(onlyUnique)
             .map(c => {
-		var subcategories = cityLayers.filter(i => i.category === c);
+		var subcategories = layers.filter(i => i.category === c);
 		return { category: c, subcategories: subcategories };
             });
-	return listLayers;
+	return categories;
+    };
+
+    onClickMap(d) {
+	this.setState({ clicked: d.properties[this.joinField] });
     };
     
     onHoverBarChart(d) {
@@ -132,27 +143,31 @@ class App extends Component {
 
     setColors(l) {
 	var values = this.features.map((d) => d.properties[l.id]);
-	var colorValues = getColorValues(values, colors);
-        this.colors.stops = colorValues.map((d, i) => [colorValues[i], colors[i]]);
-        this.colors.scale = scaleLinear().domain(colorValues).range(colors);
+	values = sample(values, colors.length);
+        this.colors.stops = values.map((d, i) => [values[i], colors[i]]);
+        this.colors.scale = scaleLinear().domain(values).range(colors);
         this.colors.highlight = "black";
     };
     
     setFeatures(l) {
-	if (this.menu.layers.filter(i => i.id === l.id)[0].layerUrl === undefined) {
-	    this.features = geojson.features
-		.sort((a, b) => b.properties[l.id] - a.properties[l.id]);
-	} else {
-	    var data = resultsJson(this.state.city);
-	    this.features = geojson.features;
-	    var quartieri = data.map((d) => d[this.joinField]);
+	this.features = geojson.features;
+	var myLayer = this.cityLayers.filter(i => i.id === l.id)[0];
+	if (myLayer.layerUrl !== undefined) {
+	    //download data from layerUrl
+	    var data = resultsJson(this.state.city, myLayer.layerId);
 	    
-	    this.features.forEach((d) => {
+	    var quartieri = data.map(d => d[this.joinField]);
+	    //console.log(quartieri)
+	    //console.log(this.features.map(d => d.properties[this.joinField]))
+	    this.features.forEach(d => {
+		
 		var index = quartieri.indexOf(d.properties[this.joinField]);
 		d.properties[l.id] = data[index][l.id];
 	    });
-	    this.features = this.features.sort((a, b) => b.properties[l.id] - a.properties[l.id]);
 	}
+	
+	this.features = this.features
+	    .sort((a, b) => b.properties[l.id] - a.properties[l.id]);
    };
 
     changeCity(d, label) {
@@ -170,6 +185,9 @@ class App extends Component {
     componentWillUpdate(nextProps, nextState) {
 	if (nextState.city !== this.state.city) {
 	    geojson = getGeojson(nextState.city);
+
+	    this.cityLayers = this.layers
+		.filter(i => i.city === nextState.city);
 	    
 	    this.setDefaultSource(nextState.city);
             this.center = this.defaultSource.center;
@@ -181,6 +199,7 @@ class App extends Component {
 	} else if (nextState.layer.id !== this.state.layer.id) {
 	    this.setFeatures(nextState.layer);
 	    this.setColors(nextState.layer);
+	    this.setState({ clicked: "none" });
 	}
     };
         
@@ -192,12 +211,12 @@ class App extends Component {
 		<div className="App-header">
 		    <div style={{ display: "flex", justifyContent: "space-between" }}>
 		        <Menu
-	                    menu={this.getListLayers(this.menu.layers)}
+	                    menu={this.getMenu()}
 	                    handleClick={this.changeLayer}/> 
 		        <h2>Mappa dei quartieri di {this.state.city}</h2>
                 
 		        <div>
-		            {this.menu.cities.map(city =>
+		            {this.cities.map(city =>
 				      <Button
 				       handleClick={this.changeCity}
 				       label={city}/>)}
@@ -205,10 +224,12 @@ class App extends Component {
 		    </div>
 		</div>
 		<div style={{ display: "flex" }}>
-		        
+		            
 		            <Map
+	                        clicked={this.state.clicked}
 	                        hoverElement={this.state.hover}
 	                        onHover={this.onHoverMap}
+	                        onClick={this.onClickMap}
 	                        options={{
 		                    city: this.state.city,
 				    center: this.center,
@@ -225,13 +246,15 @@ class App extends Component {
 	                        joinField={this.joinField}
 		            />
 		        
-	                <div style={{ width: "5vw" }}>
-	                    <BarChart
+	                <div style={{ width: "30vw" }}>
+	                     <BarChart
+	                        clicked={this.state.clicked}    
 	                        hoverElement={this.state.hover}
 	                        onHover={this.onHoverBarChart}
 	                        data={{
 		                    city: this.state.city,
 		                    label: this.state.layer.label,
+				    dataSource: this.state.layer.dataSource,
 				    headers: [this.joinField, this.state.layer.id],
 		                    values: this.features.map(d => [d.properties[self.joinField], d.properties[self.state.layer.id]]),
 				    colors: this.colors
@@ -254,12 +277,16 @@ function getGeojson(city) {
     return toreturn;
 };
 
-function resultsJson(city) {
+function resultsJson(city, id) {
     var toreturn;
-    if (city === "Milano")
+    if (city === "Milano") 
 	toreturn = results;
-    if (city === "Torino")
+    
+    if (city === "Torino" && id === "istatTorino")
 	toreturn = resultsTorino;
+    if (city === "Torino" && id === "istruzioneTorino")
+	toreturn = istruzioneTorino;
+    
     return toreturn;
 };
 
@@ -267,11 +294,9 @@ function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
 };
 
-function getColorValues(values, colors) {
+function sample(values, C) {
     var min = Math.min(...values),
         max = Math.max(...values);
-    var C = colors.length;
-
     return [...Array(C).keys()]
         .map((d) => d * (max - min) / C  + min);
 };

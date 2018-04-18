@@ -27,10 +27,14 @@ class BarChart extends Component {
 	this.state = {
 	    hoverElement: props.hoverElement,
 	    city: props.data.city,
-	    layer: props.data.headers[1]
+	    layer: props.data.headers[1],
+	    clicked: props.clicked
 	};
 	
 	this.createBarChart = this.createBarChart.bind(this);
+	this.visibilityClick = this.visibilityClick.bind(this);
+	this.visibilityHover = this.visibilityHover.bind(this);
+
     };
 
     createChart() {
@@ -108,96 +112,121 @@ class BarChart extends Component {
 
     };
 
-    createBarTooltip() {
+    visibilityHover(d, i) {
+	return (this.props.hoverElement === d[0]) ? "visible" : "hidden";
+    };
+
+    visibilityClick(d, i) {
+	return (this.props.clicked === d[0]) ? "visible" : "hidden";
+    };
+
+    colorHover() {
+	return "black";
+    };
+
+    colorClick() {
+	return "red";
+    };
+
+    classClick() {
+	return "click";
+    };
+
+    classHover() {
+	return "hover";
+    };
+    
+    
+    createBarTooltip(visibilityCallback, colorCallback, classCallback) {
 	const chartContainer = this.chartContainer;
 
-	var size = 15;
+	var size = 10;
 	select(chartContainer)
-	    .selectAll("text.tooltip")
+	    .selectAll("text.tooltip" + classCallback())
 	    .data(this.props.data.values)
 	    .enter()
 	    .append("text")
-	    .attr("class", "tooltip");
+	    .attr("class", "tooltip" + classCallback());
 	select(chartContainer)
-	    .selectAll("text.tooltip")
+	    .selectAll("text.tooltip" + classCallback())
 	    .data(this.props.data.values)
 	    .exit()
 	    .remove();
 	select(chartContainer)
-	    .selectAll("text.tooltip")
+	    .selectAll("text.tooltip" + classCallback())
 	    .data(this.props.data.values)
 	    .attr("text-anchor", "left")
 	    .attr("x", d => 300 - this.yScale(d[1]))
 	    .attr("y", (d, i) => 70 + 0.4 * size + (i + 0.5) * this.barWidth)
 	    .attr("color", "white")
 	    .text(d => round(d[1]))
-	    .style("visibility", (d, i) => {
-		return (this.props.hoverElement === d[0] || (this.props.hoverElement === "none" && i === 0)) ? "visible" : "hidden";
-	    })
+	    .style("visibility", visibilityCallback)
 	    .style("font-size", size);
 	
 	select(chartContainer)
-	    .selectAll("rect.tooltip")
+	    .selectAll("rect.tooltip" + classCallback())
 	    .data(this.props.data.values)
 	    .enter() 
 	    .append("rect")
-	    .attr("class", "tooltip");
+	    .attr("class", "tooltip" + classCallback());
 	select(chartContainer)
-	    .selectAll("rect.tooltip")
+	    .selectAll("rect.tooltip" + classCallback())
 	    .data(this.props.data.values)
 	    .exit()
 	    .remove();
 	select(chartContainer)
-	    .selectAll("rect.tooltip")
+	    .selectAll("rect.tooltip" + classCallback())
 	    .data(this.props.data.values)   
 	    .attr("x", d =>  300 - this.yScale(d[1]) - size * 0.6)
 	    .attr("y",  (d, i) => 70 + (i + 0.5) * this.barWidth - 1.5/2 * size)
-	    .attr("width", d => round(d[1]).toString().length * size * 0.7)
+	    .attr("width", d => (round(d[1]).toString().length + 1) * size * 0.7)
 	    .attr("height", 1.5 * size)
-	    .style("fill", "black")
+	    .style("fill", colorCallback)
 	    .style("fill-opacity", ".3")
-	    .style("stroke", "black")
+	    .style("stroke", colorCallback)
 	    .style("stroke-width", "1.5px")
-	    .style("visibility", (d, i) => {
-                return (this.props.hoverElement === d[0] || (this.props.hoverElement === "none" && i === 0)) ? "visible" : "hidden";
-            });
+	    .style("visibility", visibilityCallback);
 
 	select(chartContainer)
-	    .selectAll("line.tooltip")
+	    .selectAll("line.tooltip" + classCallback())
 	    .data(this.props.data.values)
             .enter()
             .append("line")
-            .attr("class", "tooltip");
+            .attr("class", "tooltip" + classCallback());
 	select(chartContainer)
-            .selectAll("line.tooltip")
+            .selectAll("line.tooltip" + classCallback())
             .data(this.props.data.values)
             .exit()
             .remove();
         select(chartContainer)
-            .selectAll("line.tooltip")
+            .selectAll("line.tooltip" + classCallback())
             .data(this.props.data.values)
-	    .attr("x1", d => 300 - this.yScale(d[1]) + round(d[1]).toString().length * size * 0.7 - size * 0.7)
+	    .attr("x1", d => 300 - this.yScale(d[1]) + (round(d[1]).toString().length + 1) * size * 0.7 - size * 0.7)
             .attr("y1", (d, i) => 70 + (i + 0.5) * this.barWidth)
             .attr("x2", d => 400 - this.yScale(d[1]))
             .attr("y2", (d, i) => 70 + (i + 0.5) * this.barWidth)
-	    .style("stroke", "#666")
+	    .style("stroke", colorCallback)
 	    .style("stroke-width", "1.5px")
-	    .style("visibility", (d, i) => {
-		return (this.props.hoverElement === d[0] || (this.props.hoverElement === "none" && i === 0)) ? "visible" : "hidden";
-            });
+	    .style("visibility", visibilityCallback);
     };
 
-    setLabel() {
+    setLabel() {	
 	select(".bartitle").remove();
-	
-        const chartContainer = this.chartContainer;
+	select(this.chartContainer).selectAll(".barcredits").remove();
+	const chartContainer = this.chartContainer;  
         select(chartContainer)
             .append("text")
             .attr("class", "bartitle")
-            .attr("text-anchor", "left")
             .attr("x", 80)
             .attr("y", 20)
             .text(this.props.data.label);
+	select(chartContainer)
+            .append("text")
+	    .attr("class", "barcredits")
+            .attr("x", 20)
+            .attr("y", 700)
+	    .attr("font-size", 8)
+	    .text("Sorgente dati: " + this.props.data.dataSource);
     };
     
     setDescription() {
@@ -212,7 +241,7 @@ class BarChart extends Component {
     
     createBarChart() {
 	const chartContainer = this.chartContainer;
-	
+
 	select(chartContainer)
 	    .append("text")
 	    .attr("id", "description")
@@ -253,17 +282,27 @@ class BarChart extends Component {
             .style("stroke-opacity", 0.25);
  
 	this.setDescription();
-	this.createBarTooltip();
+	this.createBarTooltip(this.visibilityHover, this.colorHover, this.classHover);
+	this.createBarTooltip(this.visibilityClick, this.colorClick, this.classClick);
     };
     
     render() {
-	this.barWidth = Math.min(18, Math.max(950 / (this.props.data.values.length * 1.5), 7));
-	console.log(this.barWidth )
+	const chartContainer = this.chartContainer;
+	
+	if (this.props.clicked === "none") {
+            select(chartContainer).selectAll("rect.tooltipclick").remove();
+            select(chartContainer).selectAll("text.tooltipclick").remove();
+            select(chartContainer).selectAll("line.tooltipclick").remove();
+        }
+
+	const width = 700,
+	      height = 950;
+	this.barWidth = Math.min(18, Math.max(height / (this.props.data.values.length * 1.5), 7));
 	this.createChart(); 
 	return <svg
                    ref={el => this.chartContainer = el}
-                   width={700}
-                   height={950}
+                   width={width}
+                   height={height}
 	       />
     };
 }
